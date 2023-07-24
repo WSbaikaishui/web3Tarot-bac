@@ -1,17 +1,10 @@
 package user
 
 import (
-	apiErr "./errors"
-<<<<<<< HEAD
+	apiErr "github.com/WSbaikaishui/web3Tarot-backend/errors"
 	"github.com/WSbaikaishui/web3Tarot-backend/service/user"
 	"github.com/WSbaikaishui/web3Tarot-backend/util"
 	"github.com/gin-gonic/gin"
-=======
-	"github.com/gin-gonic/gin"
-	//"../../service/user"
-	//"github.com/neo-ngd/nchat-backend/util"
->>>>>>> refs/remotes/origin/main
-	"net/http"
 )
 
 type Controller struct {
