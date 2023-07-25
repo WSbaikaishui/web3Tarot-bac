@@ -2,6 +2,8 @@ package models
 
 import "time"
 
+const divinationTable = "divinations"
+
 type Divination struct {
 	Model
 	Uuid        string `gorm:"column:uuid;type:varchar(255);NOT NULL"`
@@ -21,17 +23,17 @@ type Divination struct {
 }
 
 func GetDivinationByUserAddress(userAddress string) (divination []Divination) {
-	db.Where("user_address = ?", userAddress).First(&divination)
+	Db.Table(divinationTable).Where("user_address = ?", userAddress).First(&divination)
 	return divination
 }
 
 func GetDivinations() (divinations []Divination) {
-	db.Find(&divinations)
+	Db.Table(divinationTable).Find(&divinations)
 	return divinations
 }
 
 func CreateDivination(data interface{}) bool {
-	ddb := db.Create(data)
+	ddb := Db.Table(divinationTable).Create(data)
 	if ddb.Error != nil {
 		return false
 	}
@@ -39,7 +41,7 @@ func CreateDivination(data interface{}) bool {
 }
 
 func EditDivination(userAddress string, data interface{}) bool {
-	ddb := db.Model(&Divination{}).Where("user_address = ?", userAddress).Updates(data)
+	ddb := Db.Table(divinationTable).Model(&Divination{}).Where("user_address = ?", userAddress).Updates(data)
 	if ddb.Error != nil {
 		return false
 	}

@@ -11,7 +11,6 @@ const userTable = "users"
 
 type User struct {
 	Model
-	ID          uint        `gorm:"column:id;type:int(11) unsigned NOT NULL AUTO_INCREMENT;PRIMARY_KEY"`
 	Name        null.String `gorm:"column:name;type:VARCHAR(255)"`
 	Address     string      `gorm:"column:address;type:VARCHAR(255);NOT NULL;DEFAULT:'';unique"`
 	SeedMessage string      `gorm:"column:seed_message;type:VARCHAR(255);NOT NULL;DEFAULT:''"` // will store secret code only to save storage
@@ -23,12 +22,8 @@ type User struct {
 	UpdatedAt time.Time `gorm:"column:updated_at;<-:false;type:timestamp;NOT NULL;DEFAULT:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"`
 }
 
-func CreateUser(address string, seedMessage string, Name string) error {
-	isSuccess := db.Create(&User{
-		Address:     address,
-		SeedMessage: seedMessage,
-		Name:        null.StringFrom(Name),
-	}).Error
+func CreateUser(user *User) error {
+	isSuccess := Db.Table(userTable).Create(user).Error
 	if isSuccess != nil {
 		return isSuccess
 	}
@@ -37,7 +32,7 @@ func CreateUser(address string, seedMessage string, Name string) error {
 
 func GetUser(address string) (*User, bool, error) {
 	user := new(User)
-	if err := db.Where("address = ?", address).First(&user).Error; err != nil {
+	if err := Db.Table(userTable).Where("address = ?", address).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, false, nil
 		}
@@ -48,7 +43,7 @@ func GetUser(address string) (*User, bool, error) {
 
 func GetUsers(addresses []string) ([]*User, bool, error) {
 	var users []*User
-	if err := db.Where("address IN ?", addresses).Find(&users).Error; err != nil {
+	if err := Db.Where("address IN ?", addresses).Find(&users).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, false, nil
 		}
@@ -57,8 +52,8 @@ func GetUsers(addresses []string) ([]*User, bool, error) {
 	return users, true, nil
 }
 
-func SetKeyInfo(address string, publicKey string, keyStore string) error {
-	isSuccess := db.Model(&User{}).Where("address = ?", address).Updates(map[string]interface{}{
+func SetKeyInfo(address string, publicKey, keyStore null.String) error {
+	isSuccess := Db.Model(&User{}).Where("address = ?", address).Updates(map[string]interface{}{
 		"public_key": publicKey,
 		"key_store":  keyStore,
 	}).Error

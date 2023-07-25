@@ -4,17 +4,14 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	apiErr "github.com/WSbaikaishui/web3Tarot-backend/errors"
-	"github.com/WSbaikaishui/web3Tarot-backend/log"
-	"github.com/WSbaikaishui/web3Tarot-backend/model"
-	"github.com/WSbaikaishui/web3Tarot-backend/service/message"
-	"github.com/WSbaikaishui/web3Tarot-backend/service/notification"
-	"github.com/WSbaikaishui/web3Tarot-backend/util"
 	"github.com/joeqian10/neo3-gogogo/crypto"
 	"github.com/joeqian10/neo3-gogogo/helper"
-	"github.com/neo-ngd/nchat-backend/config"
 	"gopkg.in/guregu/null.v4"
 	"time"
+	apiErr "web3Tarot-backend/errors"
+	"web3Tarot-backend/log"
+	"web3Tarot-backend/models"
+	"web3Tarot-backend/util"
 )
 
 const signatureTpl = `Welcome to NeoChat!
@@ -35,33 +32,33 @@ Secret code: %s`
 
 const secretCodeLen = 32
 
-type Service struct {
-	userDB  *model.UserDB
-	nonceDB *model.NonceDB
-	chatDB  *model.ChatDB
-	msgDB   *model.MessageDB
-}
+//type Service struct {
+//	userDB  *models.UserDB
+//	nonceDB *models.NonceDB
+//	chatDB  *model.ChatDB
+//	msgDB   *model.MessageDB
+//}
 
-type Option func(service *Service) error
+//type Option func(service *Service) error
 
-func New(userDB *model.UserDB, nonceDB *model.NonceDB, chatDB *model.ChatDB, msgDB *model.MessageDB, opts ...Option) (*Service, error) {
-	srv := &Service{
-		userDB:  userDB,
-		nonceDB: nonceDB,
-		chatDB:  chatDB,
-		msgDB:   msgDB,
-	}
-	for _, opt := range opts {
-		if err := opt(srv); err != nil {
-			return nil, err
-		}
-	}
-	return srv, nil
-}
+//func New(userDB *model.UserDB, nonceDB *model.NonceDB, chatDB *model.ChatDB, msgDB *model.MessageDB, opts ...Option) (*Service, error) {
+//	srv := &Service{
+//		userDB:  userDB,
+//		nonceDB: nonceDB,
+//		chatDB:  chatDB,
+//		msgDB:   msgDB,
+//	}
+//	for _, opt := range opts {
+//		if err := opt(srv); err != nil {
+//			return nil, err
+//		}
+//	}
+//	return srv, nil
+//}
 
-func (svc *Service) Login(ctx context.Context, param *LoginParam) (*LoginData, error) {
+func Login(ctx context.Context, param *LoginParam) (*LoginData, error) {
 	// get nonce from db
-	nonce, ok, err := svc.nonceDB.GetNonce(ctx, param.Nonce)
+	nonce, ok, err := models.GetNonce(ctx, param.Nonce)
 	if err != nil {
 		log.Errorf("get nonce error: %v", err)
 		return nil, err
@@ -98,7 +95,7 @@ func (svc *Service) Login(ctx context.Context, param *LoginParam) (*LoginData, e
 		return nil, err
 	}
 	// try to get user from db
-	_, ok, err = svc.userDB.GetUser(ctx, param.Address)
+	_, ok, err = models.GetUser(param.Address)
 	if err != nil {
 		log.Errorf("get user failed, err: %v", err)
 		return nil, err
@@ -114,7 +111,7 @@ func (svc *Service) Login(ctx context.Context, param *LoginParam) (*LoginData, e
 			log.Errorf("generate random string error: %v", err)
 			return nil, err
 		}
-		user := model.User{
+		user := models.User{
 			Address:     param.Address,
 			SeedMessage: secretCode,
 			PublicKey:   null.String{},
@@ -122,7 +119,7 @@ func (svc *Service) Login(ctx context.Context, param *LoginParam) (*LoginData, e
 			IsOnline:    false,
 		}
 		// add user to db
-		if err := svc.userDB.Create(ctx, &user); err != nil {
+		if err := models.CreateUser(&user); err != nil {
 			log.Errorf("create user failed, err: %v", err)
 			return nil, err
 		}
@@ -130,19 +127,19 @@ func (svc *Service) Login(ctx context.Context, param *LoginParam) (*LoginData, e
 	}
 
 	// delete nonce
-	if err := svc.nonceDB.DeleteNonce(ctx, nonce); err != nil {
+	if err := models.DeleteNonce(ctx, nonce); err != nil {
 		log.Errorf("delete nonce failed, err: %v", err)
 	}
 	return data, nil
 }
 
-func (svc *Service) GetUser(ctx context.Context, address string) (*GetUserData, error) {
+func GetUser(ctx context.Context, address string) (*GetUserData, error) {
 	wa := ctx.Value(util.AuthKey).(string)
 	if wa != address {
 		return nil, apiErr.ErrForbidden("wallet address mismatch")
 	}
 	data := new(GetUserData)
-	user, ok, err := svc.userDB.GetUser(ctx, address)
+	user, ok, err := models.GetUser(address)
 	if err != nil {
 		log.Errorf("find user err: %v", err)
 		return nil, err
@@ -154,8 +151,8 @@ func (svc *Service) GetUser(ctx context.Context, address string) (*GetUserData, 
 	return data, nil
 }
 
-func (svc *Service) GetUserPublicInfo(ctx context.Context, addresses []string) ([]PublicUser, error) {
-	users, ok, err := svc.userDB.GetUsers(ctx, addresses)
+func GetUserPublicInfo(ctx context.Context, addresses []string) ([]PublicUser, error) {
+	users, ok, err := models.GetUsers(addresses)
 	if err != nil {
 		log.Errorf("find users err: %v", err)
 		return nil, err
@@ -171,13 +168,13 @@ func (svc *Service) GetUserPublicInfo(ctx context.Context, addresses []string) (
 	return publicUsers, nil
 }
 
-func (svc *Service) SetKeyInfo(ctx context.Context, param *SetKeyInfoParam) error {
+func SetKeyInfo(ctx context.Context, param *SetKeyInfoParam) error {
 	wa := ctx.Value(util.AuthKey).(string)
 	if wa != param.Address {
 		return apiErr.ErrForbidden("Wallet address mismatch")
 	}
 	// get user
-	user, ok, err := svc.userDB.GetUser(ctx, param.Address)
+	user, ok, err := models.GetUser(param.Address)
 	if err != nil {
 		log.Errorf("find user err: %v", err)
 		return err
@@ -192,48 +189,48 @@ func (svc *Service) SetKeyInfo(ctx context.Context, param *SetKeyInfoParam) erro
 	}
 	publicKey := null.StringFrom(param.PublicKey)
 	keyStore := null.StringFrom(param.KeyStore)
-	return svc.userDB.SetKeyInfo(ctx, param.Address, publicKey, keyStore)
+	return models.SetKeyInfo(param.Address, publicKey, keyStore)
 }
 
-func (svc *Service) SendWelcome(ctx context.Context, address string) {
-	// wait for ws conn?
-	time.Sleep(time.Second)
+//func SendWelcome(ctx context.Context, address string) {
+//	// wait for ws conn?
+//	time.Sleep(time.Second)
+//
+//	// create bot welcome msg
+//	if config.AppCfg.ChatGPT.BotAddress != "" && address != config.AppCfg.ChatGPT.BotAddress {
+//		sendWelcome(ctx, config.AppCfg.ChatGPT.BotAddress, address, svc.msgDB, svc.chatDB)
+//		// create manager msg
+//		if config.AppCfg.ChatGPT.ManagerAddress != "" && address != config.AppCfg.ChatGPT.ManagerAddress {
+//			sendWelcome(ctx, config.AppCfg.ChatGPT.ManagerAddress, address, svc.msgDB, svc.chatDB)
+//		}
+//	}
+//}
 
-	// create bot welcome msg
-	if config.AppCfg.ChatGPT.BotAddress != "" && address != config.AppCfg.ChatGPT.BotAddress {
-		sendWelcome(ctx, config.AppCfg.ChatGPT.BotAddress, address, svc.msgDB, svc.chatDB)
-		// create manager msg
-		if config.AppCfg.ChatGPT.ManagerAddress != "" && address != config.AppCfg.ChatGPT.ManagerAddress {
-			sendWelcome(ctx, config.AppCfg.ChatGPT.ManagerAddress, address, svc.msgDB, svc.chatDB)
-		}
-	}
-}
-
-func sendWelcome(ctx context.Context, sender, receiver string, msgDB *model.MessageDB, chatDB *model.ChatDB) {
-	msg := new(model.Message)
-	{
-		msg.Uuid = util.UuidV4()
-		msg.Sender = sender
-		msg.Receiver = receiver
-		msg.Content = message.JsonStringify(message.NewTextContent("Welcome to NeoChat!"))
-		msg.IsEncrypted = false
-		msg.Time = util.FormatUtcNow()
-	}
-	err := msgDB.Create(ctx, msg)
-	if err != nil {
-		log.Errorf("create message err: %v", err)
-		return
-	}
-
-	// update chat last msg
-	senderChat := new(model.Chat)
-	rcvChat := new(model.Chat)
-	err = message.UpdateChatLastMsg(ctx, chatDB, senderChat, rcvChat, msg)
-	if err != nil {
-		log.Errorf(fmt.Sprintf("UpdateChatLastMsg err: %v", err))
-		return
-	}
-
-	rawMsg := notification.MarshalNewMessageEvent(notification.CreateNewMessageEventFromModel(msg))
-	notification.SendMsg(receiver, rawMsg)
-}
+//func sendWelcome(ctx context.Context, sender, receiver string, msgDB *model.MessageDB, chatDB *model.ChatDB) {
+//	msg := new(models.Message)
+//	{
+//		msg.Uuid = util.UuidV4()
+//		msg.Sender = sender
+//		msg.Receiver = receiver
+//		msg.Content = message.JsonStringify(message.NewTextContent("Welcome to NeoChat!"))
+//		msg.IsEncrypted = false
+//		msg.Time = util.FormatUtcNow()
+//	}
+//	err := msgDB.Create(ctx, msg)
+//	if err != nil {
+//		log.Errorf("create message err: %v", err)
+//		return
+//	}
+//
+//	// update chat last msg
+//	senderChat := new(model.Chat)
+//	rcvChat := new(model.Chat)
+//	err = message.UpdateChatLastMsg(ctx, chatDB, senderChat, rcvChat, msg)
+//	if err != nil {
+//		log.Errorf(fmt.Sprintf("UpdateChatLastMsg err: %v", err))
+//		return
+//	}
+//
+//	rawMsg := notification.MarshalNewMessageEvent(notification.CreateNewMessageEventFromModel(msg))
+//	notification.SendMsg(receiver, rawMsg)
+//}

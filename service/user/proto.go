@@ -2,9 +2,9 @@ package user
 
 import (
 	"fmt"
-	apiErr "github.com/WSbaikaishui/web3Tarot-backend/errors"
-	"github.com/WSbaikaishui/web3Tarot-backend/model"
 	"gopkg.in/guregu/null.v4"
+	apiErr "web3Tarot-backend/errors"
+	"web3Tarot-backend/models"
 )
 
 const NeoSignatureLength = 128
@@ -43,7 +43,7 @@ type GetUserData struct {
 	IsOnline    bool        `json:"isOnline"`
 }
 
-func (u *GetUserData) FromModel(user *model.User) {
+func (u *GetUserData) FromModel(user *models.User) {
 	u.Id = user.ID
 	u.Name = user.Name
 	u.Address = user.Address
@@ -69,7 +69,7 @@ type PublicUser struct {
 	IsOnline  bool        `json:"isOnline"`
 }
 
-func (pu *PublicUser) FromModel(user *model.User) {
+func (pu *PublicUser) FromModel(user *models.User) {
 	pu.Id = user.ID
 	pu.Name = user.Name
 	pu.Address = user.Address

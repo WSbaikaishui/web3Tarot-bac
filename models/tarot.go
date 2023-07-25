@@ -1,6 +1,8 @@
 package models
 
-type tarot struct {
+const tarotTable = "tarots"
+
+type Tarot struct {
 	Model
 	CardName    string ` gorm:"column:card_name;type:varchar(255);not null;unique" `
 	CardType    bool   `gorm:"column:card_type;type:bool;not null;default:false"`
@@ -9,18 +11,18 @@ type tarot struct {
 	CardNumber  int    `gorm:"column:card_number;type:int(4);not null;unique"`
 }
 
-func GetTarotByCardNumber(cardNumber int) (tarot tarot) {
-	db.Where("card_number = ?", cardNumber).First(&tarot)
+func GetTarotByCardNumber(cardNumber int) (tarot Tarot) {
+	Db.Where("card_number = ?", cardNumber).First(&tarot)
 	return tarot
 }
 
-func GetTarots() (tarots []tarot) {
-	db.Find(&tarots)
+func GetTarots() (tarots []Tarot) {
+	Db.Find(&tarots)
 	return tarots
 }
 
 func CreateTarot(data interface{}) bool {
-	ddb := db.Create(data)
+	ddb := Db.Create(data)
 	if ddb.Error != nil {
 		return false
 	}
@@ -28,7 +30,7 @@ func CreateTarot(data interface{}) bool {
 }
 
 func EditTarot(cardNumber int, data interface{}) bool {
-	ddb := db.Model(&tarot{}).Where("card_number = ?", cardNumber).Updates(data)
+	ddb := Db.Model(&Tarot{}).Where("card_number = ?", cardNumber).Updates(data)
 	if ddb.Error != nil {
 		return false
 	}
