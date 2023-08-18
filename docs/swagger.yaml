@@ -1,0 +1,209 @@
+definitions:
+  errors.ErrorInfo:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  null.String:
+    properties:
+      string:
+        type: string
+      valid:
+        description: Valid is true if String is not NULL
+        type: boolean
+    type: object
+  user.GetPublicUserData:
+    properties:
+      publicUsers:
+        items:
+          $ref: '#/definitions/user.PublicUser'
+        type: array
+    type: object
+  user.GetUserData:
+    properties:
+      address:
+        type: string
+      id:
+        type: integer
+      isOnline:
+        type: boolean
+      keyStore:
+        $ref: '#/definitions/null.String'
+      name:
+        $ref: '#/definitions/null.String'
+      publicKey:
+        $ref: '#/definitions/null.String'
+      seedMessage:
+        type: string
+    type: object
+  user.LoginData:
+    properties:
+      isNew:
+        type: boolean
+      token:
+        type: string
+    type: object
+  user.PublicUser:
+    properties:
+      address:
+        type: string
+      id:
+        type: integer
+      isOnline:
+        type: boolean
+      name:
+        $ref: '#/definitions/null.String'
+      publicKey:
+        $ref: '#/definitions/null.String'
+    type: object
+info:
+  contact: {}
+paths:
+  /nonces:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorInfo'
+      summary: gets a nonce for a user to sign
+      tags:
+      - Nonce
+  /public-users/actions/get:
+    put:
+      parameters:
+      - description: addresses
+        in: body
+        name: addresses
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.GetPublicUserData'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorInfo'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorInfo'
+      summary: gets the user's public info from db
+      tags:
+      - User
+  /users/{address}:
+    get:
+      parameters:
+      - description: address
+        in: path
+        name: address
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.GetUserData'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorInfo'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorInfo'
+      summary: gets all the user's info from db
+      tags:
+      - User
+  /users/{address}/actions/set-e2ee-key:
+    put:
+      parameters:
+      - description: address
+        in: path
+        name: address
+        required: true
+        type: string
+      - description: publicKey
+        in: body
+        name: publicKey
+        required: true
+        schema:
+          type: string
+      - description: keyStore
+        in: body
+        name: keyStore
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorInfo'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorInfo'
+      summary: add user's public key and key store info into db
+      tags:
+      - User
+  /users/{address}/actions/sign-in:
+    put:
+      parameters:
+      - description: address
+        in: path
+        name: address
+        required: true
+        type: string
+      - description: nonce
+        in: body
+        name: nonce
+        required: true
+        schema:
+          type: string
+      - description: signature
+        in: body
+        name: signature
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.LoginData'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorInfo'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorInfo'
+      summary: binds the user's wallet address and create a user
+      tags:
+      - User
+swagger: "2.0"

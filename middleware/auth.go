@@ -25,10 +25,10 @@ func getBearerToken(req *http.Request) (string, bool) {
 }
 
 var skipAuthPrefix = []string{
-	"/nonces",
-	"/users/:address/actions/sign-in",
-	"/public-users",
-	"/notifications",
+	"/api/v1/nonces",
+	"/api/v1/users/:address/actions/sign-in",
+	"/api/v1/public-users",
+	"/api/v1/notifications",
 }
 
 func canSkipAuth(ctx *gin.Context) bool {

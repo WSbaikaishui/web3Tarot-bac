@@ -33,7 +33,7 @@ func Setup() {
 	var err error
 	filePath := getLogFilePath()
 	fileName := getLogFileName()
-	F, err = openLogFile(fileName, filePath)
+	F, err = OpenLogFile(fileName, filePath)
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"github.com/joeqian10/neo3-gogogo/crypto"
 	"github.com/joeqian10/neo3-gogogo/helper"
@@ -72,18 +71,26 @@ func Login(ctx context.Context, param *LoginParam) (*LoginData, error) {
 
 	// verify signature
 	msg := helper.BytesToHex([]byte(fmt.Sprintf(signatureTpl, param.Address, param.Nonce)))
-	msgLength := helper.VarIntFromInt(len(msg) / 2)
-	serializedMsg := helper.HexToBytes("010001f0" + hex.EncodeToString(msgLength.Bytes()) + msg + "0000")
-
-	sig := helper.HexToBytes(param.Signature)
-	pubKeys, err := util.RecoverPubKeyFromSigOnSecp256r1(serializedMsg, sig)
+	//msgLength := helper.VarIntFromInt(len(msg) / 2)
+	//serializedMsg := helper.HexToBytes("010001f0" + hex.EncodeToString(msgLength.Bytes()) + msg + "0000")
+	//
+	//sig := helper.HexToBytes(param.Signature)
+	pubkeyEth, err := util.VerifyMessage(msg, param.Signature)
 	if err != nil {
-		log.Errorf("verify signature failed, err: %v", err)
+		log.Errorf("verify message failed, err: %v", err)
 		return nil, apiErr.ErrInvalidSignature("invalid signature")
 	}
-	if !util.VerifyAddress(param.Address, pubKeys) {
+	if param.Address != pubkeyEth {
 		return nil, apiErr.ErrInvalidSignature("recovered address does not match")
 	}
+	//pubKeys, err := util.RecoverPubKeyFromSigOnSecp256r1(serializedMsg, sig)
+	//if err != nil {
+	//	log.Errorf("verify signature failed, err: %v", err)
+	//	return nil, apiErr.ErrInvalidSignature("invalid signature")
+	//}
+	//if !util.VerifyAddress(param.Address, pubKeys) {
+	//	return nil, apiErr.ErrInvalidSignature("recovered address does not match")
+	//}
 	// generate token
 	hash, err := crypto.AddressToScriptHash(param.Address, helper.DefaultAddressVersion)
 	if err != nil {
@@ -116,7 +123,6 @@ func Login(ctx context.Context, param *LoginParam) (*LoginData, error) {
 			SeedMessage: secretCode,
 			PublicKey:   null.String{},
 			KeyStore:    null.String{},
-			IsOnline:    false,
 		}
 		// add user to db
 		if err := models.CreateUser(&user); err != nil {
@@ -168,29 +174,29 @@ func GetUserPublicInfo(ctx context.Context, addresses []string) ([]PublicUser, e
 	return publicUsers, nil
 }
 
-func SetKeyInfo(ctx context.Context, param *SetKeyInfoParam) error {
-	wa := ctx.Value(util.AuthKey).(string)
-	if wa != param.Address {
-		return apiErr.ErrForbidden("Wallet address mismatch")
-	}
-	// get user
-	user, ok, err := models.GetUser(param.Address)
-	if err != nil {
-		log.Errorf("find user err: %v", err)
-		return err
-	}
-	if !ok {
-		return apiErr.ErrNotFound("User not found")
-	}
-
-	// only can set the key info once
-	if !user.PublicKey.IsZero() || !user.KeyStore.IsZero() {
-		return apiErr.ErrForbidden("User key info already set")
-	}
-	publicKey := null.StringFrom(param.PublicKey)
-	keyStore := null.StringFrom(param.KeyStore)
-	return models.SetKeyInfo(param.Address, publicKey, keyStore)
-}
+//func SetKeyInfo(ctx context.Context, param *SetKeyInfoParam) error {
+//	wa := ctx.Value(util.AuthKey).(string)
+//	if wa != param.Address {
+//		return apiErr.ErrForbidden("Wallet address mismatch")
+//	}
+//	// get user
+//	user, ok, err := models.GetUser(param.Address)
+//	if err != nil {
+//		log.Errorf("find user err: %v", err)
+//		return err
+//	}
+//	if !ok {
+//		return apiErr.ErrNotFound("User not found")
+//	}
+//
+//	// only can set the key info once
+//	if !user.PublicKey.IsZero() || !user.KeyStore.IsZero() {
+//		return apiErr.ErrForbidden("User key info already set")
+//	}
+//	publicKey := null.StringFrom(param.PublicKey)
+//	keyStore := null.StringFrom(param.KeyStore)
+//	return models.SetKeyInfo(param.Address, publicKey, keyStore)
+//}
 
 //func SendWelcome(ctx context.Context, address string) {
 //	// wait for ws conn?

@@ -40,17 +40,15 @@ type GetUserData struct {
 	SeedMessage string      `json:"seedMessage"`
 	PublicKey   null.String `json:"publicKey"`
 	KeyStore    null.String `json:"keyStore"`
-	IsOnline    bool        `json:"isOnline"`
 }
 
 func (u *GetUserData) FromModel(user *models.User) {
-	u.Id = user.ID
+	u.Id = uint(user.ID)
 	u.Name = user.Name
 	u.Address = user.Address
 	u.SeedMessage = fmt.Sprintf(seedMessageTpl, user.Address, user.SeedMessage)
 	u.PublicKey = user.PublicKey
 	u.KeyStore = user.KeyStore
-	u.IsOnline = user.IsOnline
 }
 
 type GetPublicUserParam struct {
@@ -70,11 +68,10 @@ type PublicUser struct {
 }
 
 func (pu *PublicUser) FromModel(user *models.User) {
-	pu.Id = user.ID
+	pu.Id = uint(user.ID)
 	pu.Name = user.Name
 	pu.Address = user.Address
 	pu.PublicKey = user.PublicKey
-	pu.IsOnline = user.IsOnline
 }
 
 type SetKeyInfoParam struct {

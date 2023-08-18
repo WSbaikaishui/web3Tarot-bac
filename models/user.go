@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const userTable = "users"
+const userTable = "user"
 
 type User struct {
 	Model
@@ -16,7 +16,7 @@ type User struct {
 	SeedMessage string      `gorm:"column:seed_message;type:VARCHAR(255);NOT NULL;DEFAULT:''"` // will store secret code only to save storage
 	PublicKey   null.String `gorm:"column:public_key;type:VARCHAR(255)"`
 	KeyStore    null.String `gorm:"column:key_store;type:VARCHAR(1023)"`
-	IsOnline    bool        `gorm:"column:is_online;type:bool;NOT NULL;DEFAULT:false"`
+	Count       int         `gorm:"column:count;type:int;NOT NULL;DEFAULT:3"`
 
 	CreatedAt time.Time `gorm:"column:created_at;<-:false;type:timestamp;NOT NULL;DEFAULT:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time `gorm:"column:updated_at;<-:false;type:timestamp;NOT NULL;DEFAULT:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"`
@@ -56,6 +56,17 @@ func SetKeyInfo(address string, publicKey, keyStore null.String) error {
 	isSuccess := Db.Model(&User{}).Where("address = ?", address).Updates(map[string]interface{}{
 		"public_key": publicKey,
 		"key_store":  keyStore,
+	}).Error
+	if isSuccess != nil {
+		return isSuccess
+	}
+	return nil
+}
+
+func UpdateUserCount(address string, count int) error {
+
+	isSuccess := Db.Model(&User{}).Where("address = ?", address).Updates(map[string]interface{}{
+		"count": count,
 	}).Error
 	if isSuccess != nil {
 		return isSuccess

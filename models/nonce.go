@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const nonceTable = "nonces"
+const nonceTable = "nonce"
 
 type Nonce struct {
 	ID uint `gorm:"column:id;type:int(11) unsigned NOT NULL AUTO_INCREMENT;PRIMARY_KEY"`

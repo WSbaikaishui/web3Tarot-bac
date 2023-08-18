@@ -32,10 +32,7 @@ const TTL = 300 * time.Second
 func GetNonce(ctx context.Context) (*GetNonceData, error) {
 	ulid := util.GenerateULID()
 	exp := time.Now().Add(TTL).Unix()
-	//if err := svc.redisCli.Set(ctx, getNonceKey(key), now, time.Second*300).Err(); err != nil {
-	//	log.Errorf("redis set nonce failed, err: %v", err)
-	//	return nil, err
-	//}
+
 	nonce := models.Nonce{
 		Nonce:      ulid,
 		Expiration: uint(exp),

@@ -18,6 +18,7 @@ func initSchema(db *gorm.DB) error {
 		&Tarot{},
 		&Nonce{},
 		&User{},
+		&Transaction{},
 	); err != nil {
 		fmt.Println("migrate tables error", err)
 		return nil

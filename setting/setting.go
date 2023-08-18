@@ -17,10 +17,13 @@ type App struct {
 	ImageMaxSize   int
 	ImageAllowExts []string
 
-	LogSavePath string
-	LogSaveName string
-	LogFileExt  string
-	TimeFormat  string
+	LogSavePath     string
+	LogSaveName     string
+	LogFileExt      string
+	TimeFormat      string
+	ContractAddress string
+	GasPerTarot     int
+	Neo3NodeUrl     string
 }
 
 var AppSetting = &App{}
@@ -46,7 +49,7 @@ type Database struct {
 var DatabaseSetting = &Database{}
 
 func Setup() {
-	Cfg, err := ini.Load("../config/app.ini")
+	Cfg, err := ini.Load("config/app.ini")
 	if err != nil {
 		log.Fatalf("Fail to parse 'config/app.ini': %v", err)
 	}
