@@ -1,7 +1,5 @@
 package models
 
-import "fmt"
-
 const tarotTable = "tarot"
 
 type Tarot struct {
@@ -22,7 +20,7 @@ type Tarot struct {
 func GetTarotByCardNumber(cardNumber int) *Tarot {
 	var tarot Tarot
 	Db.Table(tarotTable).Where("id=?", cardNumber).First(&tarot)
-	fmt.Println(tarot)
+
 	return &tarot
 }
 

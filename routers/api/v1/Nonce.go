@@ -3,6 +3,7 @@ package v1
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"web3Tarot-backend/pkg/logging"
 	"web3Tarot-backend/service/nonce"
 	"web3Tarot-backend/util"
 )
@@ -17,7 +18,7 @@ import (
 func GetNonce(ctx *gin.Context) {
 	data, err := nonce.GetNonce(ctx)
 	if err != nil {
-		util.EncodeError(ctx, err)
+		logging.Error(util.EncodeError(err))
 		return
 	}
 	ctx.JSON(http.StatusOK, data)

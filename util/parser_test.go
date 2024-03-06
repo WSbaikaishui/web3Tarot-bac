@@ -51,7 +51,7 @@ func TestEncodeErr(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/ping", nil)
-	EncodeError(ctx, apiErr.ErrInvalidParameter("invalid parameter"))
+	EncodeError(apiErr.ErrInvalidParameter("invalid parameter"))
 	// read body from recorder
 	body := w.Body.String()
 	if body != `{"code":"InvalidParameter","message":"invalid parameter","data":{}}` {

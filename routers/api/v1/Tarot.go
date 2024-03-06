@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	apiErr "web3Tarot-backend/errors"
+	"web3Tarot-backend/pkg/logging"
 	"web3Tarot-backend/service/tarot"
 	"web3Tarot-backend/util"
 )
@@ -19,7 +20,7 @@ import (
 func GetTarotCards(ctx *gin.Context) {
 	data, err := tarot.GetAllTarot()
 	if err != nil {
-		util.EncodeError(ctx, err)
+		logging.Error(util.EncodeError(err))
 		return
 	}
 	ctx.JSON(http.StatusOK, data)
@@ -37,13 +38,13 @@ func GetTarotCard(ctx *gin.Context) {
 
 	if err != nil {
 		err := apiErr.ErrInvalidParameter("invalid id")
-		util.EncodeError(ctx, err)
+		logging.Error(util.EncodeError(err))
 		return
 	}
 
 	data, err := tarot.GetTarotCard(id)
 	if err != nil {
-		util.EncodeError(ctx, err)
+		logging.Error(util.EncodeError(err))
 		return
 	}
 	ctx.JSON(http.StatusOK, data)
@@ -61,13 +62,13 @@ func GetTarotImage(ctx *gin.Context) {
 
 	if err != nil {
 		err := apiErr.ErrInvalidParameter("invalid id")
-		util.EncodeError(ctx, err)
+		logging.Error(util.EncodeError(err))
 		return
 	}
 
 	data, err := tarot.GetTarotCard(id)
 	if err != nil {
-		util.EncodeError(ctx, err)
+		logging.Error(util.EncodeError(err))
 		return
 	}
 	ctx.JSON(http.StatusOK, data.CardImage)
@@ -83,13 +84,13 @@ func GetTarotImage(ctx *gin.Context) {
 func UploadTarotCard(ctx *gin.Context) {
 	var param tarot.UploadTarot
 	if err := ctx.ShouldBindJSON(&param); err != nil {
-		util.EncodeError(ctx, apiErr.ErrInvalidParameter(err.Error()))
+		logging.Error(util.EncodeError(apiErr.ErrInvalidParameter(err.Error())))
 		return
 	}
 	for i, _ := range param.Cards {
 		err := tarot.UploadTarotCardMessage(&param.Cards[i])
 		if err != nil {
-			util.EncodeError(ctx, err)
+			logging.Error(util.EncodeError(err))
 			return
 		}
 	}

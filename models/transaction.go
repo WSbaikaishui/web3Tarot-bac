@@ -9,15 +9,15 @@ type Transaction struct {
 	Amount  int    `gorm:"column:number;type:int;NOT NULL;DEFAULT:0"`
 }
 
-func CreateTransaction(data interface{}, count int) error {
+func CreateTransaction(data interface{}, user_id int, count int) error {
 	tx := Db.Begin()
 
 	ddb := tx.Table(transactionTable).Create(data)
 	if ddb.Error != nil {
 		tx.Rollback()
 	}
-	if err := tx.Table(userTable).Updates(map[string]interface{}{
-		"count": count,
+	if err := tx.Table(userTable).Where("user_id=?", user_id).Updates(map[string]interface{}{
+		"token": count,
 	}).Error; err != nil {
 		// 回滚事务
 		tx.Rollback()
@@ -30,7 +30,7 @@ func CreateTransaction(data interface{}, count int) error {
 }
 
 func GetTransactionByAddress(address string) (transactions []*Transaction) {
-	Db.Table(transactionTable).Where("address=?", address).Find(&transactions)
+	Db.Table(transactionTable).Where("address=?", address).Find(&transactions).Limit(10).Order("desc")
 	return transactions
 }
 

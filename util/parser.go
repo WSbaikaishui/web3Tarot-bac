@@ -16,7 +16,7 @@ type BaseResp struct {
 	Data interface{} `json:"data"`
 }
 
-func EncodeError(gCtx *gin.Context, err error) {
+func EncodeError(err error) string {
 	var (
 		code      int
 		errDetail apiErr.ErrorInfo
@@ -31,13 +31,7 @@ func EncodeError(gCtx *gin.Context, err error) {
 		errDetail = errInfo
 	}
 
-	serverErrors.WithLabelValues(gCtx.Request.Method, gCtx.Request.URL.Path,
-		fmt.Sprintf("%d", errDetail.Code), errDetail.Message).Inc()
-
-	gCtx.AbortWithStatusJSON(code, BaseResp{
-		ErrorInfo: errDetail,
-		Data:      struct{}{},
-	})
+	return fmt.Sprintf("%d: %d", errDetail.Code, code) + errDetail.Message
 }
 
 func EncodeResp(gCtx *gin.Context, data interface{}) {

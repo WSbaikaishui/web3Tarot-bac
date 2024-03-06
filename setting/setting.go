@@ -22,8 +22,15 @@ type App struct {
 	LogFileExt      string
 	TimeFormat      string
 	ContractAddress string
-	GasPerTarot     int
-	Neo3NodeUrl     string
+	JsonPath        string
+	OkxApi          string
+	TonToken        string
+	TonAddress      string
+	TokenAddress    string
+	TonTestNetApi   string
+	TgApi           string
+	ModelApi        string
+	ModelJsonPath   string
 }
 
 var AppSetting = &App{}

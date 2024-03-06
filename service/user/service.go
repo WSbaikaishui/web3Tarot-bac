@@ -1,12 +1,6 @@
 package user
 
 import (
-	"context"
-	"fmt"
-	"github.com/joeqian10/neo3-gogogo/crypto"
-	"github.com/joeqian10/neo3-gogogo/helper"
-	"gopkg.in/guregu/null.v4"
-	"time"
 	apiErr "web3Tarot-backend/errors"
 	"web3Tarot-backend/log"
 	"web3Tarot-backend/models"
@@ -55,97 +49,35 @@ const secretCodeLen = 32
 //	return srv, nil
 //}
 
-func Login(ctx context.Context, param *LoginParam) (*LoginData, error) {
-	// get nonce from db
-	nonce, ok, err := models.GetNonce(ctx, param.Nonce)
-	if err != nil {
-		log.Errorf("get nonce error: %v", err)
-		return nil, err
-	}
-	if !ok { // not found in db
-		return nil, apiErr.ErrInvalidParameter("invalid nonce")
-	}
-	if time.Now().Unix() > int64(nonce.Expiration) {
-		return nil, apiErr.ErrInvalidParameter("nonce expired")
-	}
+func Login(param *LoginParam) (*LoginData, error) {
 
-	// verify signature
-	msg := helper.BytesToHex([]byte(fmt.Sprintf(signatureTpl, param.Address, param.Nonce)))
-	//msgLength := helper.VarIntFromInt(len(msg) / 2)
-	//serializedMsg := helper.HexToBytes("010001f0" + hex.EncodeToString(msgLength.Bytes()) + msg + "0000")
-	//
-	//sig := helper.HexToBytes(param.Signature)
-	pubkeyEth, err := util.VerifyMessage(msg, param.Signature)
+	// generate seed msg
+	secretCode, err := util.RandomString(secretCodeLen)
 	if err != nil {
-		log.Errorf("verify message failed, err: %v", err)
-		return nil, apiErr.ErrInvalidSignature("invalid signature")
-	}
-	if param.Address != pubkeyEth {
-		return nil, apiErr.ErrInvalidSignature("recovered address does not match")
-	}
-	//pubKeys, err := util.RecoverPubKeyFromSigOnSecp256r1(serializedMsg, sig)
-	//if err != nil {
-	//	log.Errorf("verify signature failed, err: %v", err)
-	//	return nil, apiErr.ErrInvalidSignature("invalid signature")
-	//}
-	//if !util.VerifyAddress(param.Address, pubKeys) {
-	//	return nil, apiErr.ErrInvalidSignature("recovered address does not match")
-	//}
-	// generate token
-	hash, err := crypto.AddressToScriptHash(param.Address, helper.DefaultAddressVersion)
-	if err != nil {
-		return nil, apiErr.ErrInvalidParameter("invalid Address")
-	}
-	token, err := util.GenerateToken(hash.String(), time.Now().AddDate(0, 0, 7).Unix())
-	if err != nil {
-		log.Errorf("generate token failed, err: %v", err)
+		log.Errorf("generate random string error: %v", err)
 		return nil, err
 	}
-	// try to get user from db
-	_, ok, err = models.GetUser(param.Address)
-	if err != nil {
-		log.Errorf("get user failed, err: %v", err)
+	user := models.User{
+		UserId:    param.UserID,
+		Name:      param.Name,
+		FirstName: param.FirstName,
+		//Address:     param.Address,
+		SeedMessage: secretCode,
+		Token:       4000,
+	}
+	data := &LoginData{}
+	data.IsNew = models.IsUserExist(param.UserID)
+	// add user to db
+	if err := models.CreateUser(&user); err != nil {
+		log.Errorf("create user failed, err: %v", err)
 		return nil, err
-	}
-	data := &LoginData{
-		Token: token,
-		IsNew: false,
-	}
-	if !ok {
-		// generate seed msg
-		secretCode, err := util.RandomString(secretCodeLen)
-		if err != nil {
-			log.Errorf("generate random string error: %v", err)
-			return nil, err
-		}
-		user := models.User{
-			Address:     param.Address,
-			SeedMessage: secretCode,
-			PublicKey:   null.String{},
-			KeyStore:    null.String{},
-		}
-		// add user to db
-		if err := models.CreateUser(&user); err != nil {
-			log.Errorf("create user failed, err: %v", err)
-			return nil, err
-		}
-		data.IsNew = true
-	}
-
-	// delete nonce
-	if err := models.DeleteNonce(ctx, nonce); err != nil {
-		log.Errorf("delete nonce failed, err: %v", err)
 	}
 	return data, nil
 }
 
-func GetUser(ctx context.Context, address string) (*GetUserData, error) {
-	wa := ctx.Value(util.AuthKey).(string)
-	if wa != address {
-		return nil, apiErr.ErrForbidden("wallet address mismatch")
-	}
+func GetUser(user_id int) (*GetUserData, error) {
 	data := new(GetUserData)
-	user, ok, err := models.GetUser(address)
+	user, ok, err := models.GetUserBalance(user_id)
 	if err != nil {
 		log.Errorf("find user err: %v", err)
 		return nil, err
@@ -157,22 +89,22 @@ func GetUser(ctx context.Context, address string) (*GetUserData, error) {
 	return data, nil
 }
 
-func GetUserPublicInfo(ctx context.Context, addresses []string) ([]PublicUser, error) {
-	users, ok, err := models.GetUsers(addresses)
-	if err != nil {
-		log.Errorf("find users err: %v", err)
-		return nil, err
-	}
-	if !ok {
-		return nil, apiErr.ErrNotFound("users not found")
-	}
-	publicUsers := make([]PublicUser, len(users))
-	for i, _ := range users {
-		publicUsers[i].FromModel(users[i])
-	}
-
-	return publicUsers, nil
-}
+//func GetUserPublicInfo(ctx context.Context, addresses []string) ([]PublicUser, error) {
+//	users, ok, err := models.GetUsers(addresses)
+//	if err != nil {
+//		log.Errorf("find users err: %v", err)
+//		return nil, err
+//	}
+//	if !ok {
+//		return nil, apiErr.ErrNotFound("users not found")
+//	}
+//	publicUsers := make([]PublicUser, len(users))
+//	for i, _ := range users {
+//		publicUsers[i].FromModel(users[i])
+//	}
+//
+//	return publicUsers, nil
+//}
 
 //func SetKeyInfo(ctx context.Context, param *SetKeyInfoParam) error {
 //	wa := ctx.Value(util.AuthKey).(string)
